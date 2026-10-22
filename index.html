@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Landmarks Around the World — Guessing Game</title>
+<style>
+  :root{--bg1:#4f46e5;--bg2:#ec4899;--bg3:#f59e0b;--bg4:#06b6d4;--card:#fff;--ink:#1e1b4b;--muted:#64748b}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:radial-gradient(circle at 10% 15%,rgba(255,255,255,.25) 0 18%,transparent 19%),radial-gradient(circle at 85% 20%,rgba(255,255,255,.18) 0 12%,transparent 13%),linear-gradient(135deg,var(--bg1),var(--bg2) 45%,var(--bg3) 75%,var(--bg4));display:flex;align-items:center;justify-content:center;padding:24px}
+  .app{width:min(880px,100%)}
+  .card{background:var(--card);border-radius:28px;padding:28px;box-shadow:0 25px 70px rgba(0,0,0,.28);border:5px solid rgba(255,255,255,.65)}
+  .cover{text-align:center;padding:16px 8px 8px}
+  .badge{display:inline-flex;padding:8px 16px;border-radius:999px;background:linear-gradient(90deg,#fde68a,#fecaca,#bfdbfe);font-weight:800;color:#4c1d95;box-shadow:0 6px 18px rgba(0,0,0,.12);letter-spacing:.4px;text-transform:uppercase;font-size:13px}
+  .cover h1{margin:18px 0 8px;font-size:clamp(38px,7vw,68px);line-height:1.02;letter-spacing:-1px;background:linear-gradient(90deg,#4f46e5,#db2777,#f59e0b,#0891b2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover h2{margin:0 0 16px;color:#334155;font-size:clamp(18px,3vw,26px);font-weight:700}
+  .cover p{max-width:620px;margin:0 auto 26px;color:var(--muted);font-size:17px;line-height:1.55}
+  .start-btn{display:inline-block;border:0;cursor:pointer;color:#fff;font-size:22px;font-weight:900;padding:18px 42px;border-radius:999px;letter-spacing:.5px;background:linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7);background-size:300% 100%;animation:flow 5s linear infinite;box-shadow:0 14px 30px rgba(79,70,229,.35);transition:.2s}
+  .start-btn:hover{transform:translateY(-3px) scale(1.02)}
+  @keyframes flow{to{background-position:300% 0}}
+  .cover-art{font-size:52px;margin-bottom:8px;animation:bounce 2.4s ease-in-out infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  #gameScreen{display:none}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .title{font-size:24px;font-weight:900;color:#4c1d95}
+  .pills{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{border-radius:999px;padding:8px 14px;font-weight:800;font-size:14px;color:#fff;box-shadow:0 5px 14px rgba(0,0,0,.14)}
+  .q{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+  .score{background:linear-gradient(90deg,#f59e0b,#f43f5e)}
+  .stage{background:linear-gradient(90deg,#10b981,#06b6d4)}
+  .image-wrap{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:16/10;background:#e2e8f0;border:5px solid #fff;box-shadow:0 12px 34px rgba(15,23,42,.18)}
+  canvas{width:100%;height:100%;object-fit:cover;display:block}
+  .stage-tag{position:absolute;left:14px;top:14px;padding:8px 14px;border-radius:999px;background:rgba(15,23,42,.78);color:#fff;font-weight:800;font-size:13px;backdrop-filter:blur(6px)}
+  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#475569;font-weight:800;font-size:18px;text-align:center;padding:20px}
+  .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:18px}
+  button{border:0;border-radius:16px;padding:15px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;transition:.18s;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+  button:hover:not(:disabled){transform:translateY(-2px)}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  #hintBtn{background:linear-gradient(90deg,#3b82f6,#8b5cf6)}
+  #revealBtn{background:linear-gradient(90deg,#22c55e,#059669)}
+  #nextBtn{background:linear-gradient(90deg,#f59e0b,#f43f5e)}
+  #restartBtn{background:linear-gradient(90deg,#64748b,#334155)}
+  .modal-backdrop{display:none;position:fixed;inset:0;z-index:50;padding:20px;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+  .modal-backdrop.open{display:flex}
+  .modal{width:min(460px,100%);background:#fff;border-radius:26px;padding:26px;text-align:center;border:5px solid rgba(255,255,255,.7);box-shadow:0 25px 70px rgba(0,0,0,.4);animation:pop .25s ease-out}
+  @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+  .modal .emoji{font-size:52px}
+  .modal h3{margin:8px 0 10px;font-size:30px;color:#166534}
+  .modal .fact{margin:6px 0;font-size:17px;color:#334155;font-weight:600}
+  .modal .fact strong{color:#4c1d95}
+  .modal button{margin-top:16px;width:100%;background:linear-gradient(90deg,#f59e0b,#f43f5e)}
+  .final{display:none;text-align:center;padding:20px}
+  .final h2{font-size:38px;margin:0 0 8px;color:#7c3aed}
+  .final p{font-size:20px;color:#334155}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="card cover" id="coverScreen">
+    <div class="cover-art">🌍🗼🏯🗿</div>
+    <div class="badge">English guessing game</div>
+    <h1>Famous Landmarks<br>Around the World</h1>
+    <h2>Can you guess where in the world it is?</h2>
+    <p>Look closely at each pixelated picture. Use the three picture hints to make a guess, then reveal the landmark and its country.</p>
+    <button class="start-btn" id="startBtn">▶ Start the Game</button>
+  </section>
+
+  <section class="card" id="gameScreen">
+    <div class="top">
+      <div class="title">🌍 Guess the Landmark</div>
+      <div class="pills">
+        <div class="pill q" id="questionCounter">Question 1 / 10</div>
+        <div class="pill score">Score: <span id="score">0</span></div>
+        <div class="pill stage" id="stageLabel">Hint 1</div>
+      </div>
+    </div>
+    <div class="image-wrap">
+      <canvas id="landmarkCanvas"></canvas>
+      <div class="loading" id="loadingText">Loading real-life picture…</div>
+      <div class="stage-tag" id="stageText">Hint level 1: Extremely pixelated</div>
+    </div>
+    <div class="controls">
+      <button id="hintBtn">🔍 Show clearer picture</button>
+      <button id="revealBtn">✅ Reveal answer</button>
+      <button id="nextBtn" disabled>➡️ Next landmark</button>
+    </div>
+  </section>
+
+  <section class="card final" id="endScreen">
+    <div class="cover-art">🎉🏆🌍</div>
+    <h2>Great job, explorers!</h2>
+    <p>You scored <strong id="finalScore">0</strong> out of 10 landmarks.</p>
+    <button id="restartBtn">🔁 Play again</button>
+  </section>
+</div>
+
+<div class="modal-backdrop" id="answerModal">
+  <div class="modal">
+    <div class="emoji">🎉</div>
+    <h3 id="modalName"></h3>
+    <p class="fact">Country: <strong id="modalCountry"></strong></p>
+    <button id="closeModalBtn">Continue ➡️</button>
+  </div>
+</div>
+
+<script>
+const WIKI="https://en.wikipedia.org/api/rest_v1/page/summary/";
+const W="https://commons.wikimedia.org/wiki/Special:FilePath/";
+const landmarks=[
+ {name:"Eiffel Tower",country:"France",color:"#3b82f6",wiki:"Eiffel_Tower",images:[W+"Tour%20Eiffel%20Wikimedia%20Commons.jpg?width=1200",W+"Eiffel_Tower_from_the_Tour_Montparnasse_3,_Paris_May_2008.jpg?width=1200"]},
+ {name:"The Great Wall",country:"China",color:"#ef4444",wiki:"Great_Wall_of_China",images:[W+"The%20Great%20Wall%20of%20China%20at%20Jinshanling-edit.jpg?width=1200",W+"20090529_Great_Wall_8185.jpg?width=1200"]},
+ {name:"Colosseum",country:"Italy",color:"#f59e0b",wiki:"Colosseum",images:[W+"Colosseo%202020.jpg?width=1200",W+"Colosseum_in_Rome,_Italy_-_April_2007.jpg?width=1200"]},
+ {name:"Sydney Opera House",country:"Australia",color:"#06b6d4",wiki:"Sydney_Opera_House",images:[W+"Sydney%20Opera%20House%20Sails.jpg?width=1200",W+"Sydney_Opera_House_-_Dec_2008.jpg?width=1200"]},
+ {name:"Big Ben",country:"United Kingdom",color:"#8b5cf6",wiki:"Big_Ben",images:[W+"Big%20Ben%202012.JPG?width=1200",W+"Clock_Tower_-_Palace_of_Westminster,_London_-_May_2007.jpg?width=1200"]},
+ {name:"Mount Fuji",country:"Japan",color:"#22c55e",wiki:"Mount_Fuji",images:[W+"Mt%20Fuji%20Software%20crater.jpg?width=1200",W+"FujiSunriseKawaguchiko2025.JPG?width=1200"]},
+ {name:"Forbidden City",country:"China",color:"#f43f5e",wiki:"Forbidden_City",images:[W+"Forbidden%20City%20Beijing%20Shenwumen%20Gate.JPG?width=1200",W+"The_Forbidden_City_-_View_from_Coal_Hill.jpg?width=1200"]},
+ {name:"Great Barrier Reef",country:"Australia",color:"#0ea5e9",wiki:"Great_Barrier_Reef",images:[W+"Great%20Barrier%20Reef%2C%20Australia%20%28cropped%29.jpg?width=1200",W+"Great_Barrier_Reef.jpg?width=1200"]},
+ {name:"Leaning Tower of Pisa",country:"Italy",color:"#a855f7",wiki:"Leaning_Tower_of_Pisa",images:[W+"Torre%20di%20Pisa%20giu13.jpg?width=1200",W+"Leaning_Tower_of_Pisa_JD03092007.jpg?width=1200"]},
+ {name:"Marina Bay Sands",country:"Singapore",color:"#14b8a6",wiki:"Marina_Bay_Sands",images:[W+"Marina%20Bay%20Sands%20in%20the%20evening%20-%2020101120.jpg?width=1200",W+"Marina_Bay_Sands_%287875949550%29.jpg?width=1200"]}
+];
+
+let order=[...landmarks.keys()].sort(()=>Math.random()-0.5);
+let q=0,hint=1,score=0,answered=false,urlIndex=0;
+const canvas=document.getElementById("landmarkCanvas"),ctx=canvas.getContext("2d"),img=new Image();
+img.crossOrigin="anonymous";
+const stages={1:"Hint level 1: Extremely pixelated",2:"Hint level 2: Clearer, but still unclear",3:"Hint level 3: Full clear picture"};
+
+document.getElementById("startBtn").onclick=()=>{
+ document.getElementById("coverScreen").style.display="none";
+ document.getElementById("gameScreen").style.display="block";
+ loadImage(); update();
+};
+
+function currentLandmark(){return landmarks[order[q]];}
+
+function loadImage(){
+ urlIndex=0;
+ document.getElementById("loadingText").style.display="flex";
+ document.getElementById("loadingText").textContent="Loading real-life picture…";
+ const c=currentLandmark();
+ fetch(WIKI+c.wiki)
+  .then(r=>{if(!r.ok)throw new Error("wiki");return r.json();})
+  .then(data=>{
+    const photo=data.originalimage&&data.originalimage.source?data.originalimage.source:(data.thumbnail&&data.thumbnail.source?data.thumbnail.source:null);
+    if(!photo)throw new Error("nophoto");
+    img.onload=()=>{document.getElementById("loadingText").style.display="none";draw();};
+    img.onerror=()=>tryNextImage();
+    img.src=photo;
+  })
+  .catch(()=>tryNextImage());
+}
+
+function tryNextImage(){
+ const urls=currentLandmark().images;
+ if(urlIndex>=urls.length){makePlaceholder();return;}
+ img.onload=()=>{document.getElementById("loadingText").style.display="none";draw();};
+ img.onerror=()=>{urlIndex++;tryNextImage();};
+ img.src=urls[urlIndex]+"&t="+Date.now();
+}
+
+function makePlaceholder(){
+ const c=currentLandmark();
+ const off=document.createElement("canvas");off.width=800;off.height=500;
+ const o=off.getContext("2d");
+ const g=o.createLinearGradient(0,0,800,500);g.addColorStop(0,c.color);g.addColorStop(1,"#1e1b4b");
+ o.fillStyle=g;o.fillRect(0,0,800,500);
+ o.fillStyle="rgba(255,255,255,.95)";o.textAlign="center";o.textBaseline="middle";
+ o.font="bold 44px system-ui, sans-serif";o.fillText("Photo unavailable",400,230);
+ o.font="bold 30px system-ui, sans-serif";o.fillText(c.name,400,300);
+ img.onload=()=>{document.getElementById("loadingText").style.display="none";draw();};
+ img.src=off.toDataURL();
+}
+
+function draw(){
+ const box=canvas.parentElement.getBoundingClientRect();
+ canvas.width=Math.round(box.width*devicePixelRatio);
+ canvas.height=Math.round(box.height*devicePixelRatio);
+ const scale={1:.008,2:.08,3:1}[hint];
+ const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+ const off=document.createElement("canvas");off.width=w;off.height=h;
+ off.getContext("2d").drawImage(img,0,0,w,h);
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.imageSmoothingEnabled=hint!==1;
+ ctx.drawImage(off,0,0,canvas.width,canvas.height);
+}
+
+function update(){
+ document.getElementById("questionCounter").textContent=`Question ${q+1} / 10`;
+ document.getElementById("score").textContent=score;
+ document.getElementById("stageLabel").textContent=`Hint ${hint}`;
+ document.getElementById("stageText").textContent=stages[hint];
+ document.getElementById("hintBtn").disabled=hint>=3||answered;
+ document.getElementById("revealBtn").disabled=answered;
+ document.getElementById("nextBtn").disabled=!answered;
+}
+
+function reveal(){
+ if(answered)return;
+ const c=currentLandmark();
+ hint=3;draw();score++;answered=true;
+ document.getElementById("modalName").textContent=c.name;
+ document.getElementById("modalCountry").textContent=c.country;
+ document.getElementById("answerModal").classList.add("open");
+ update();
+}
+
+document.getElementById("closeModalBtn").onclick=()=>document.getElementById("answerModal").classList.remove("open");
+
+function next(){
+ document.getElementById("answerModal").classList.remove("open");
+ q++;
+ if(q>=10){document.getElementById("gameScreen").style.display="none";document.getElementById("endScreen").style.display="block";document.getElementById("finalScore").textContent=score;return;}
+ hint=1;answered=false;loadImage();update();
+}
+
+document.getElementById("hintBtn").onclick=()=>{if(hint<3){hint++;draw();update();}};
+document.getElementById("revealBtn").onclick=reveal;
+document.getElementById("nextBtn").onclick=next;
+document.getElementById("restartBtn").onclick=()=>location.reload();
+window.addEventListener("resize",()=>{if(document.getElementById("gameScreen").style.display==="block")draw();});
+</script>
+</body>
+</html>
